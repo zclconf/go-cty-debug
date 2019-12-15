@@ -18,8 +18,8 @@ import (
 // their built-in definitions of equality.
 var CmpOptions cmp.Option
 
-var transformValueOp = cmp.Transformer("ctydebug.TransformValueForCmp", TransformValueForCmp)
-var transformTypeOp = cmp.Transformer("ctydebug.TransformTypeForCmp", TransformTypeForCmp)
+var transformValueOp = cmp.Transformer("ctydebug.TransformValueForCmp", transformValueForCmp)
+var transformTypeOp = cmp.Transformer("ctydebug.TransformTypeForCmp", transformTypeForCmp)
 
 func init() {
 	CmpOptions = cmp.Options{
@@ -60,11 +60,7 @@ func typesCanCompareDeep(a, b cty.Type) bool {
 		(b.IsCollectionType() || b.IsTupleType() || b.IsObjectType())
 }
 
-// TransformValueForCmp is a function suitable for use with cmp.Transformer
-// on package github.com/google/go-cmp/cmp that turns cty collection and
-// structural values into Go maps and slices so that cmp can understand
-//.how to recursively compare them.
-func TransformValueForCmp(v cty.Value) interface{} {
+func transformValueForCmp(v cty.Value) interface{} {
 	if v == cty.NilVal {
 		return v
 	}
@@ -129,11 +125,11 @@ func (w ctyMapVal) ctyValue() cty.Value {
 	return cty.MapVal(w)
 }
 
-// TransformTypeForCmp is a function suitable for use with cmp.Transformer
+// transformTypeForCmp is a function suitable for use with cmp.Transformer
 // on package github.com/google/go-cmp/cmp that turns cty collection and
 // structural types into Go maps and slices so that cmp can understand
 //.how to recursively compare them.
-func TransformTypeForCmp(ty cty.Type) interface{} {
+func transformTypeForCmp(ty cty.Type) interface{} {
 	if ty == cty.NilType {
 		return ty
 	}
