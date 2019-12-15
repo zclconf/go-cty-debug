@@ -18,18 +18,21 @@ import (
 // their built-in definitions of equality.
 var CmpOptions cmp.Option
 
+var transformValueOp = cmp.Transformer("ctydebug.TransformValueForCmp", TransformValueForCmp)
+var transformTypeOp = cmp.Transformer("ctydebug.TransformTypeForCmp", TransformTypeForCmp)
+
 func init() {
 	CmpOptions = cmp.Options{
 		cmp.FilterValues(
 			valuesCanCompareDeep,
-			cmp.Transformer("ctydebug.TransformValueForCmp", TransformValueForCmp),
+			transformValueOp,
 		),
 		cmp.FilterValues(func(a, b cty.Value) bool {
 			return !valuesCanCompareDeep(a, b)
 		}, cmp.Comparer(cty.Value.RawEquals)),
 		cmp.FilterValues(
 			typesCanCompareDeep,
-			cmp.Transformer("ctydebug.TransformTypeForCmp", TransformTypeForCmp),
+			transformTypeOp,
 		),
 		cmp.FilterValues(func(a, b cty.Type) bool {
 			return !typesCanCompareDeep(a, b)
@@ -93,13 +96,38 @@ func TransformValueForCmp(v cty.Value) interface{} {
 
 type ctyTupleVal []cty.Value
 
+func (w ctyTupleVal) ctyValue() cty.Value { return cty.TupleVal(w) }
+
 type ctyListVal []cty.Value
+
+func (w ctyListVal) ctyValue() cty.Value {
+	if len(w) == 0 {
+		return cty.ListValEmpty(cty.DynamicPseudoType) // lossy
+	}
+	return cty.ListVal(w)
+}
 
 type ctySetVal []cty.Value
 
+func (w ctySetVal) ctyValue() cty.Value {
+	if len(w) == 0 {
+		return cty.SetValEmpty(cty.DynamicPseudoType) // lossy
+	}
+	return cty.SetVal(w)
+}
+
 type ctyObjectVal map[string]cty.Value
 
+func (w ctyObjectVal) ctyValue() cty.Value { return cty.ObjectVal(w) }
+
 type ctyMapVal map[string]cty.Value
+
+func (w ctyMapVal) ctyValue() cty.Value {
+	if len(w) == 0 {
+		return cty.MapValEmpty(cty.DynamicPseudoType) // lossy
+	}
+	return cty.MapVal(w)
+}
 
 // TransformTypeForCmp is a function suitable for use with cmp.Transformer
 // on package github.com/google/go-cmp/cmp that turns cty collection and
@@ -134,10 +162,20 @@ func TransformTypeForCmp(ty cty.Type) interface{} {
 
 type ctyObjectType map[string]cty.Type
 
+func (w ctyObjectType) ctyType() cty.Type { return cty.Object(w) }
+
 type ctyTupleType []cty.Type
+
+func (w ctyTupleType) ctyType() cty.Type { return cty.Tuple(w) }
 
 type ctyListType [1]cty.Type
 
+func (w ctyListType) ctyType() cty.Type { return cty.List(w[0]) }
+
 type ctyMapType [1]cty.Type
 
+func (w ctyMapType) ctyType() cty.Type { return cty.Map(w[0]) }
+
 type ctySetType [1]cty.Type
+
+func (w ctySetType) ctyType() cty.Type { return cty.Set(w[0]) }
