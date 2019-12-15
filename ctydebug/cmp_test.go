@@ -28,18 +28,4 @@ func ExampleCmpOptions_diffObjects() {
 	// the names of the attributes that are different, which this
 	// achieves. Perhaps we can improve on this in future to somehow
 	// make it use the GoString of these values.
-
-	// Output:
-	// value diff:
-	//   cty.Value(Inverse(ctydebug.TransformValueForCmp, ctydebug.ctyObjectVal{
-	// - 	"bar": {ty: cty.Type{typeImpl: cty.primitiveType{Kind: 83}}, v: string("c")},
-	// + 	"bar": {ty: cty.Type{typeImpl: cty.primitiveType{Kind: 83}}, v: string("b")},
-	// + 	"foo": {ty: cty.Type{typeImpl: cty.primitiveType{Kind: 83}}, v: string("a")},
-	//   }))
-	// type diff:
-	//   cty.Type(Inverse(ctydebug.TransformTypeForCmp, ctydebug.ctyObjectType{
-	//   	"bar": {typeImpl: cty.primitiveType{Kind: 83}},
-	// + 	"foo": {typeImpl: cty.primitiveType{Kind: 83}},
-	//   }))
-
 }
