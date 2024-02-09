@@ -18,8 +18,8 @@ import (
 // their built-in definitions of equality.
 var CmpOptions cmp.Option
 
-var transformValueOp = cmp.Transformer("ctydebug.TransformValueForCmp", transformValueForCmp)
-var transformTypeOp = cmp.Transformer("ctydebug.TransformTypeForCmp", transformTypeForCmp)
+var transformValueOp = cmp.Transformer("ctydebug.transformValueForCmp", transformValueForCmp)
+var transformTypeOp = cmp.Transformer("ctydebug.transformTypeForCmp", transformTypeForCmp)
 
 func init() {
 	CmpOptions = cmp.Options{
@@ -44,6 +44,12 @@ func valuesCanCompareDeep(a, b cty.Value) bool {
 	if a == cty.NilVal || b == cty.NilVal {
 		return false
 	}
+	if a.IsNull() || b.IsNull() {
+		return false
+	}
+	if !(a.IsKnown() && b.IsKnown()) {
+		return false
+	}
 	aTy := a.Type()
 	bTy := b.Type()
 
@@ -60,7 +66,7 @@ func typesCanCompareDeep(a, b cty.Type) bool {
 		(b.IsCollectionType() || b.IsTupleType() || b.IsObjectType())
 }
 
-func transformValueForCmp(v cty.Value) interface{} {
+func transformValueForCmp(v cty.Value) any {
 	if v == cty.NilVal {
 		return v
 	}
@@ -71,64 +77,79 @@ func transformValueForCmp(v cty.Value) interface{} {
 		return v
 
 	case ty.IsObjectType():
-		return ctyObjectVal(v.AsValueMap())
+		return newCtyObjectVal(v.AsValueMap())
 
 	case ty.IsMapType():
-		return ctyMapVal(v.AsValueMap())
+		return newCtyMapVal(v.AsValueMap())
 
 	case ty.IsTupleType():
-		return ctyTupleVal(v.AsValueSlice())
+		return newCtyTupleVal(v.AsValueSlice())
 
 	case ty.IsListType():
-		return ctyListVal(v.AsValueSlice())
+		return newCtyListVal(v.AsValueSlice())
 
 	case ty.IsSetType():
-		return ctySetVal(v.AsValueSlice())
+		return newCtySetVal(v.AsValueSlice())
 
 	default:
 		return v
 	}
 }
 
-type ctyTupleVal []cty.Value
+type ctyTupleVal []any
 
-func (w ctyTupleVal) ctyValue() cty.Value { return cty.TupleVal(w) }
-
-type ctyListVal []cty.Value
-
-func (w ctyListVal) ctyValue() cty.Value {
-	if len(w) == 0 {
-		return cty.ListValEmpty(cty.DynamicPseudoType) // lossy
+func newCtyTupleVal(elems []cty.Value) ctyTupleVal {
+	ret := make(ctyTupleVal, len(elems))
+	for i, v := range elems {
+		ret[i] = transformValueForCmp(v)
 	}
-	return cty.ListVal(w)
+	return ret
 }
 
-type ctySetVal []cty.Value
+type ctyListVal []any
 
-func (w ctySetVal) ctyValue() cty.Value {
-	if len(w) == 0 {
-		return cty.SetValEmpty(cty.DynamicPseudoType) // lossy
+func newCtyListVal(elems []cty.Value) ctyListVal {
+	ret := make(ctyListVal, len(elems))
+	for i, v := range elems {
+		ret[i] = transformValueForCmp(v)
 	}
-	return cty.SetVal(w)
+	return ret
 }
 
-type ctyObjectVal map[string]cty.Value
+type ctySetVal []any
 
-func (w ctyObjectVal) ctyValue() cty.Value { return cty.ObjectVal(w) }
-
-type ctyMapVal map[string]cty.Value
-
-func (w ctyMapVal) ctyValue() cty.Value {
-	if len(w) == 0 {
-		return cty.MapValEmpty(cty.DynamicPseudoType) // lossy
+func newCtySetVal(elems []cty.Value) ctySetVal {
+	ret := make(ctySetVal, len(elems))
+	for i, v := range elems {
+		ret[i] = transformValueForCmp(v)
 	}
-	return cty.MapVal(w)
+	return ret
+}
+
+type ctyObjectVal map[string]any
+
+func newCtyObjectVal(attrs map[string]cty.Value) ctyObjectVal {
+	ret := make(ctyObjectVal, len(attrs))
+	for k, v := range attrs {
+		ret[k] = transformValueForCmp(v)
+	}
+	return ret
+}
+
+type ctyMapVal map[string]any
+
+func newCtyMapVal(attrs map[string]cty.Value) ctyMapVal {
+	ret := make(ctyMapVal, len(attrs))
+	for k, v := range attrs {
+		ret[k] = transformValueForCmp(v)
+	}
+	return ret
 }
 
 // transformTypeForCmp is a function suitable for use with cmp.Transformer
 // on package github.com/google/go-cmp/cmp that turns cty collection and
 // structural types into Go maps and slices so that cmp can understand
-//.how to recursively compare them.
+// .how to recursively compare them.
 func transformTypeForCmp(ty cty.Type) interface{} {
 	if ty == cty.NilType {
 		return ty

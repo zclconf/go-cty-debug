@@ -28,7 +28,7 @@ func ExampleDiffValues() {
 	// Output:
 	// {cty.Value}["bar"]
 	//   got:  cty.StringVal("b")
-	//   want: cty.EmptyObjectVal
+	//   want: ctydebug.ctyObjectVal{}
 	//
 	// {cty.Value}["baz"]["goodbye"]
 	//   got:  (no value)
