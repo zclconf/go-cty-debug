@@ -2,6 +2,7 @@ package ctydebug_test
 
 import (
 	"fmt"
+	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/zclconf/go-cty-debug/ctydebug"
@@ -28,4 +29,16 @@ func ExampleCmpOptions_diffObjects() {
 	// the names of the attributes that are different, which this
 	// achieves. Perhaps we can improve on this in future to somehow
 	// make it use the GoString of these values.
+}
+
+func TestCmpPaths(t *testing.T) {
+	pathA := cty.GetAttrPath("a")
+	pathB := cty.GetAttrPath("b").Index(cty.Zero)
+
+	if diff := cmp.Diff(pathA, pathB, ctydebug.CmpOptions); diff == "" {
+		t.Errorf("did not detect diff between pathA and pathB")
+	}
+	if diff := cmp.Diff(pathB, pathB, ctydebug.CmpOptions); diff != "" {
+		t.Errorf("detected unexpected diff between pathB and itself\n%s", diff)
+	}
 }

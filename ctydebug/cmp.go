@@ -37,6 +37,7 @@ func init() {
 		cmp.FilterValues(func(a, b cty.Type) bool {
 			return !typesCanCompareDeep(a, b)
 		}, cmp.Comparer(cty.Type.Equals)),
+		cmp.Comparer(cty.Path.Equals),
 	}
 }
 
