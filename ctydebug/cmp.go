@@ -72,6 +72,12 @@ func transformValueForCmp(v cty.Value) any {
 		return v
 	}
 	ty := v.Type()
+
+	if unmarkedV, marks := v.Unmark(); len(marks) != 0 {
+		ret := transformValueForCmp(unmarkedV)
+		return maybeMarkedVal(ret, marks)
+	}
+
 	switch {
 
 	case v.IsNull() || !v.IsKnown():
@@ -175,6 +181,21 @@ func transformTypeForCmp(ty cty.Type) interface{} {
 
 	default:
 		return ty
+	}
+}
+
+type ctyMarkedVal struct {
+	Value any
+	Marks cty.ValueMarks
+}
+
+func maybeMarkedVal(ret any, marks cty.ValueMarks) any {
+	if len(marks) == 0 {
+		return ret
+	}
+	return ctyMarkedVal{
+		Value: ret,
+		Marks: marks,
 	}
 }
 
